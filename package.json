@@ -1,0 +1,8 @@
+{
+  "name": "freya-bird",
+  "version": "0.2.0-studio",
+  "private": true,
+  "scripts": {
+    "test": "node tests/smoke.mjs"
+  }
+}
