@@ -15,16 +15,18 @@ for (const mode of ['hunt', 'calm', 'fish']) {
   assert.ok(html.includes(`play('${mode}')`), `${mode} mode is wired`);
 }
 
-for (const asset of ['feather.png', 'fish.png', 'angelfish.png']) {
+for (const asset of ['feather.png', 'fish.png', 'angelfish.png', 'betta.png']) {
   const file = await stat(new URL(`../${asset}`, import.meta.url));
   assert.ok(file.size > 0, `${asset} is non-empty`);
   assert.ok(html.includes(asset), `${asset} is referenced by the page`);
 }
 
-for (const species of ['goldfish', 'angelfish']) {
+for (const species of ['goldfish', 'angelfish', 'betta']) {
   assert.ok(html.includes(`name:'${species}'`), `${species} behavior is configured`);
   assert.ok(html.includes(`.fish.${species}`), `${species} artwork is styled`);
 }
+
+assert.ok(html.includes('fishes.length>=3'), 'fish mode is capped at three fish');
 
 assert.ok(html.includes('user-scalable=no'), 'iPad zoom guard is retained');
 assert.ok(html.includes("visibilitychange"), 'background audio lifecycle is handled');
