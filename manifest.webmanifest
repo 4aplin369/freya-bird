@@ -1,0 +1,10 @@
+{
+  "name": "Freya Bird",
+  "short_name": "Freya Bird",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#42494e",
+  "theme_color": "#42494e"
+}
