@@ -3,22 +3,25 @@ import { strict as assert } from 'node:assert';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+const ratScript = await readFile(new URL('../rat-house.js', import.meta.url), 'utf8');
+const ratCss = await readFile(new URL('../rat-house.css', import.meta.url), 'utf8');
 
 assert.ok(script, 'inline game script is present');
 new Function(script);
+new Function(ratScript);
 
-for (const id of ['go', 'calm', 'fishMode', 'rustleMode', 'home', 'sound', 'fullscreen']) {
+for (const id of ['go', 'calm', 'fishMode', 'rustleMode', 'ratMode', 'home', 'sound', 'fullscreen']) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `control #${id} is present`);
 }
 
-for (const mode of ['hunt', 'calm', 'fish', 'rustle']) {
+for (const mode of ['hunt', 'calm', 'fish', 'rustle', 'rats']) {
   assert.ok(html.includes(`play('${mode}')`), `${mode} mode is wired`);
 }
 
-for (const asset of ['feather.png', 'fish.png', 'angelfish.png', 'betta.png']) {
+for (const asset of ['feather.png', 'fish.png', 'angelfish.png', 'betta.png', 'rat-light.png', 'rat-run-sheet.png', 'rat-forest.png', 'rat-house.png']) {
   const file = await stat(new URL(`../${asset}`, import.meta.url));
   assert.ok(file.size > 0, `${asset} is non-empty`);
-  assert.ok(html.includes(asset), `${asset} is referenced by the page`);
+  assert.ok([html, ratCss, ratScript].some(source => source.includes(asset)), `${asset} is referenced by the page`);
 }
 
 for (const species of ['goldfish', 'angelfish', 'betta']) {
@@ -31,6 +34,18 @@ assert.ok(html.includes('className=\'rustle-bump waiting\''), 'blanket prey star
 assert.ok(html.includes('rustleHits%3===0'), 'mouse reveal is paced after repeated catches');
 assert.ok(html.includes('fabricRipple'), 'paw catches create a fabric ripple');
 assert.ok(html.includes('rustleSound'), 'blanket mode has optional rustling audio');
+assert.ok(html.includes('createRatHouse(world,rustleSound)'), 'rat house mode is initialized with optional audio');
+assert.ok(html.includes('rat-house.css') && html.includes('rat-house.js'), 'rat scene styles and logic are loaded');
+assert.ok(ratScript.includes("rat.state = 'outbound'") && ratScript.includes("rat.state = 'inbound'"), 'rats loop between stash and house');
+assert.ok(ratScript.includes("classList.toggle('resting'") && ratScript.includes("classList.toggle('sprinting'"), 'rat gait reflects movement state');
+assert.ok(ratCss.includes('@keyframes rat-stride') && ratCss.includes('rat-run-sheet.png'), 'rats use a four-frame running cycle');
+assert.ok(ratScript.includes('parts[built].classList.add'), 'house gains a visible piece on delivery');
+for (const part of ['foundation', 'left-wall-lower', 'left-wall-upper', 'right-wall-lower', 'right-wall-upper', 'entrance-lower', 'entrance-upper', 'left-eave', 'right-eave', 'left-roof', 'right-roof', 'left-ridge', 'right-ridge']) {
+  assert.ok(ratScript.includes(`name: '${part}'`), `${part} is a separate build step`);
+}
+assert.ok(ratScript.includes("material === 'leaf'"), 'rats bring leaves for the roof rather than the walls');
+assert.ok(ratScript.includes('reset()'), 'house can rebuild after completion');
+assert.ok(ratCss.includes('.rat-house') && ratCss.includes('.builder-rat'), 'house and rat have styled artwork');
 assert.ok(!html.includes('ДРОЖЬ ЗЕМЛИ'), 'joke title is not used in the interface');
 
 assert.ok(html.includes('user-scalable=no'), 'iPad zoom guard is retained');
@@ -45,4 +60,4 @@ assert.ok(html.includes("visibilitychange"), 'background audio lifecycle is hand
 const manifest = JSON.parse(await readFile(new URL('../manifest.webmanifest', import.meta.url), 'utf8'));
 assert.equal(manifest.display, 'fullscreen', 'installed app uses fullscreen display mode');
 
-console.log('Freya Bird smoke test passed: 4 modes, blanket prey, audio, fullscreen, iPad zoom guards.');
+console.log('Freya Bird smoke test passed: 5 modes, rat house, blanket prey, audio, fullscreen, iPad zoom guards.');
