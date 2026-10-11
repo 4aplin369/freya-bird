@@ -36,16 +36,19 @@ function createRatHouse(world, playRustle) {
     const rat = { el, side, x: 0, y: 0, state: 'inbound', waitUntil: 0, boostUntil: 0, carrying: true, bob: index * 2.1 };
     el.addEventListener('pointerdown', event => {
       event.preventDefault();
-      if (event.pointerType === 'touch') el.setPointerCapture?.(event.pointerId);
-      rat.boostUntil = performance.now() + 1300;
-      rat.waitUntil = 0;
-      el.classList.remove('resting');
+      if (rat.state === 'caught') return;
+      rat.state = 'caught';
+      rat.waitUntil = performance.now() + 1600;
+      rat.boostUntil = 0;
+      rat.carrying = false;
+      el.classList.remove('resting', 'sprinting');
       const box = el.getBoundingClientRect();
       const ring = document.createElement('i');
       ring.className = 'rat-paw-ring';
       ring.style.left = `${box.left - scene.getBoundingClientRect().left + box.width * .6}px`;
       ring.style.top = `${box.top - scene.getBoundingClientRect().top + box.height * .6}px`;
       scene.append(ring);
+      el.hidden = true;
       setTimeout(() => ring.remove(), 600);
       playRustle(.05);
     });
@@ -78,7 +81,10 @@ function createRatHouse(world, playRustle) {
     if (built === parts.length) {
       completedAt = now;
       house.classList.add('complete');
-      rats.forEach(rat => { rat.state = 'outbound'; rat.carrying = false; });
+      rats.forEach(rat => {
+        if (rat.state !== 'caught') rat.state = 'outbound';
+        rat.carrying = false;
+      });
     }
   }
   function reset() {
@@ -88,6 +94,7 @@ function createRatHouse(world, playRustle) {
     house.classList.remove('complete');
     parts.forEach(part => part.classList.remove('built'));
     rats.forEach((rat, index) => {
+      if (rat.state === 'caught') return;
       rat.state = 'inbound';
       rat.carrying = true;
       rat.waitUntil = performance.now() + index * 1100;
@@ -99,7 +106,20 @@ function createRatHouse(world, playRustle) {
     last = now;
     if (completedAt && now - completedAt > 6200) reset();
     for (const rat of rats) {
+      if (rat.state === 'caught') {
+        if (now < rat.waitUntil) continue;
+        // Reveal before measuring: hidden elements have zero width.
+        rat.el.hidden = false;
+      }
       const p = positions(rat);
+      if (rat.state === 'caught') {
+        // Re-enter from the edge, away from the paw that caught this rat.
+        rat.x = rat.side === 1 ? -rat.el.offsetWidth : scene.clientWidth;
+        rat.y = p.floor;
+        rat.state = completedAt ? 'outbound' : 'inbound';
+        rat.carrying = !completedAt;
+        rat.waitUntil = 0;
+      }
       const target = rat.state === 'inbound' ? p.center : p.stash;
       const waiting = now < rat.waitUntil || rat.state === 'rest';
       const speed = reducedMotion?.matches ? 95 : now < rat.boostUntil ? 440 : 175;
